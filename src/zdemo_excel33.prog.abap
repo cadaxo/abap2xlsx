@@ -15,7 +15,7 @@ DATA: lo_excel                TYPE REF TO zcl_excel,
       lo_converter            TYPE REF TO zcl_excel_converter,
       lo_autofilter           TYPE REF TO zcl_excel_autofilter.
 
-DATA lt_test TYPE TABLE OF t005t.
+*DATA lt_test TYPE TABLE OF t005t.
 
 DATA: l_cell_value TYPE zexcel_cell_value,
       ls_area      TYPE zexcel_s_autofilter_area.
@@ -35,8 +35,10 @@ START-OF-SELECTION.
   lo_worksheet = lo_excel->get_active_worksheet( ).
   lo_worksheet->set_title( ip_title = 'Internal table' ).
 
-  SELECT * UP TO 2 ROWS FROM t005t INTO TABLE lt_test.  "#EC CI_NOWHERE
+*  SELECT * from t005t INTO TABLE lt_test.  "#EC CI_NOWHERE
+* lt_test[ 1 ]-spras = 'W'.
 
+ select * from zdatentypen into table @data(lt_test).
   CREATE OBJECT lo_converter.
 
   lo_converter->convert( EXPORTING

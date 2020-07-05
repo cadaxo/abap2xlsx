@@ -627,6 +627,7 @@ CLASS zcl_excel_worksheet DEFINITION
         !ip_value      TYPE simple
       EXPORTING
         !ep_value      TYPE simple
+        !ep_value_out  TYPE simple
         !ep_value_type TYPE abap_typekind .
     METHODS print_title_set_range .
     METHODS update_dimension_range
@@ -4491,6 +4492,9 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
     ep_value_type = cl_abap_typedescr=>typekind_string. " Thats our default if something goes wrong.
 
     TRY.
+*        IF ip_value = 'W'.
+*          BREAK-POINT.
+*        ENDIF.
         lo_addit            ?= cl_abap_typedescr=>describe_by_data( ip_value ).
       CATCH cx_sy_move_cast_error.
         CLEAR lo_addit.
@@ -4500,6 +4504,7 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
                                 EXCEPTIONS not_found    = 1
                                            no_ddic_type = 2
                                            OTHERS       = 3 ) .
+
       IF sy-subrc = 0.
         ep_value_type = ls_dfies-inttype.
 
@@ -4525,8 +4530,22 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
             ELSE.
               TRY.
                   ep_value = l_value.
+                  IF ep_value <> l_value.
+                    IF ls_dfies-outputlen <= strlen( ep_value_out ).
+
+                      ep_value = ip_value.
+                      ep_value_out = l_value.
+
+                    ENDIF.
+                  ENDIF.
+
                 CATCH cx_root.
                   ep_value = ip_value.
+                  IF ls_dfies-outputlen <= strlen( ep_value_out ).
+
+                    ep_value_out = l_value.
+
+                  ENDIF.
               ENDTRY.
             ENDIF.
           ENDIF.
@@ -4880,9 +4899,15 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
         IF ip_abap_type IS SUPPLIED.
           lv_value_type = ip_abap_type.
         ELSE.
+          DATA: lv_value_out  TYPE zexcel_cell_value.
           get_value_type( EXPORTING ip_value      = ip_value
                           IMPORTING ep_value      = <fs_value>
-                                    ep_value_type = lv_value_type ).
+                                    ep_value_type = lv_value_type
+                                    ep_value_out  = lv_value_out ).
+          IF lv_value_out IS NOT INITIAL OR ip_column = 'S'.
+            ASSIGN lv_value_out TO <fs_value>.
+            BREAK-POINT.
+          ENDIF.
         ENDIF.
 
         ASSIGN ('CL_ABAP_TYPEDESCR=>TYPEKIND_INT8') TO <fs_typekind_int8>.
@@ -4891,7 +4916,7 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
         ENDIF.
 
         CASE lv_value_type.
-          WHEN cl_abap_typedescr=>typekind_int1 OR cl_abap_typedescr=>typekind_int1 OR cl_abap_typedescr=>typekind_int2
+          WHEN cl_abap_typedescr=>typekind_int OR cl_abap_typedescr=>typekind_int1 OR cl_abap_typedescr=>typekind_int1 OR cl_abap_typedescr=>typekind_int2
             OR <fs_typekind_int8>. "Allow INT8 types columns
             lo_addit = cl_abap_elemdescr=>get_i( ).
             CREATE DATA lo_value_new TYPE HANDLE lo_addit.
